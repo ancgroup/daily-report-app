@@ -1,0 +1,22 @@
+/* PC/スマホ切り替え */
+.pc-only { display: block; }
+.mobile-only { display: none; }
+
+@media (max-width: 768px) {
+  .pc-only { display: none; }
+  .mobile-only { display: block; }
+}
+
+/* 共通ボタン */
+button {
+  margin: 0.25rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: #1976d2;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:hover {
+  background: #145a9e;
+}

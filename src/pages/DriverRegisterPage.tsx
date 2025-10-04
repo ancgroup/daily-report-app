@@ -16,12 +16,11 @@ const DriverRegisterPage: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
-  // 運転者一覧取得
+  // 運転者一覧を取得
   const fetchDrivers = async () => {
-    const { data, error } = await supabase.from("drivers").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("drivers").select("*").order("created_at", { ascending: true });
     if (error) {
-      console.error("運転者一覧取得エラー:", error);
-      setMessage("運転者データの取得に失敗しました");
+      console.error("運転者取得エラー:", error);
     } else {
       setDrivers(data || []);
     }
@@ -31,17 +30,22 @@ const DriverRegisterPage: React.FC = () => {
     fetchDrivers();
   }, []);
 
-  // 保存処理
-  const handleSaveDriver = async () => {
+  // 保存処理（新規 or 更新）
+  const handleSave = async () => {
     if (!name) {
-      setMessage("運転者名を入力してください");
+      setMessage("名前を入力してください");
       return;
     }
 
     if (editingId) {
-      const { error } = await supabase.from("drivers").update({ name }).eq("id", editingId);
+      // 更新
+      const { error } = await supabase
+        .from("drivers")
+        .update({ name })
+        .eq("id", editingId);
+
       if (error) {
-        console.error("運転者更新エラー:", error);
+        console.error("更新エラー:", error);
         setMessage("更新に失敗しました");
       } else {
         setMessage("更新しました");
@@ -49,9 +53,11 @@ const DriverRegisterPage: React.FC = () => {
         fetchDrivers();
       }
     } else {
+      // 新規追加
       const { error } = await supabase.from("drivers").insert([{ name }]);
+
       if (error) {
-        console.error("運転者追加エラー:", error);
+        console.error("追加エラー:", error);
         setMessage("保存に失敗しました");
       } else {
         setMessage("保存しました");
@@ -62,8 +68,16 @@ const DriverRegisterPage: React.FC = () => {
     setName("");
   };
 
+  // 編集開始
+  const handleEdit = (driver: Driver) => {
+    setEditingId(driver.id);
+    setName(driver.name);
+  };
+
   // 削除処理
-  const handleDeleteDriver = async (id: string) => {
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("削除しますか？")) return;
+
     const { error } = await supabase.from("drivers").delete().eq("id", id);
     if (error) {
       console.error("削除エラー:", error);
@@ -74,43 +88,48 @@ const DriverRegisterPage: React.FC = () => {
     }
   };
 
-  // 編集処理
-  const handleEditDriver = (driver: Driver) => {
-    setEditingId(driver.id);
-    setName(driver.name);
-  };
-
   return (
     <div style={{ padding: "1rem" }}>
       <h2>👤 運転者登録</h2>
 
       <div style={{ marginBottom: "1rem" }}>
         <label>
-          運転者名：
+          名前：
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
         </label>
       </div>
 
       <div style={{ marginBottom: "1rem" }}>
-        <button onClick={handleSaveDriver}>{editingId ? "更新" : "保存"}</button>{" "}
+        <button onClick={handleSave}>{editingId ? "更新" : "保存"}</button>{" "}
         <button onClick={() => navigate("/")}>TOPへ戻る</button>
       </div>
 
       {message && <p>{message}</p>}
 
+      {/* 一覧表示 */}
       <h3>登録済み運転者一覧</h3>
       {drivers.length === 0 ? (
-        <p>まだ運転者が登録されていません。</p>
+        <p>まだ登録がありません。</p>
       ) : (
-        <ul>
-          {drivers.map((d) => (
-            <li key={d.id}>
-              {d.name}
-              <button onClick={() => handleEditDriver(d)}>編集</button>{" "}
-              <button onClick={() => handleDeleteDriver(d.id)}>削除</button>
-            </li>
-          ))}
-        </ul>
+        <table border={1} cellPadding={4} style={{ borderCollapse: "collapse", width: "100%" }}>
+          <thead>
+            <tr>
+              <th>名前</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {drivers.map((d) => (
+              <tr key={d.id}>
+                <td>{d.name}</td>
+                <td>
+                  <button onClick={() => handleEdit(d)}>編集</button>{" "}
+                  <button onClick={() => handleDelete(d.id)}>削除</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

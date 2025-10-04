@@ -16,17 +16,16 @@ const VehicleRegisterPage: React.FC = () => {
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [name, setName] = useState("");
-  const [oilChangeKm, setOilChangeKm] = useState("");
+  const [oilChangeKm, setOilChangeKm] = useState<number>(0);
   const [elementChanged, setElementChanged] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
-  // 車両一覧取得
+  // 車両一覧を取得
   const fetchVehicles = async () => {
-    const { data, error } = await supabase.from("vehicles").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("vehicles").select("*").order("created_at", { ascending: true });
     if (error) {
-      console.error("車両一覧取得エラー:", error);
-      setMessage("車両データの取得に失敗しました");
+      console.error("車両取得エラー:", error);
     } else {
       setVehicles(data || []);
     }
@@ -36,23 +35,26 @@ const VehicleRegisterPage: React.FC = () => {
     fetchVehicles();
   }, []);
 
-  // 保存処理
-  const handleSaveVehicle = async () => {
+  // 保存処理（新規 or 更新）
+  const handleSave = async () => {
     if (!name || !oilChangeKm) {
-      setMessage("車両名とオイル交換距離を入力してください");
+      setMessage("車両名とオイル交換時の距離は必須です");
       return;
     }
 
-    const vehicleData = {
-      name,
-      oil_change_km: Number(oilChangeKm),
-      element_changed: elementChanged,
-    };
-
     if (editingId) {
-      const { error } = await supabase.from("vehicles").update(vehicleData).eq("id", editingId);
+      // 更新
+      const { error } = await supabase
+        .from("vehicles")
+        .update({
+          name,
+          oil_change_km: oilChangeKm,
+          element_changed: elementChanged,
+        })
+        .eq("id", editingId);
+
       if (error) {
-        console.error("車両更新エラー:", error);
+        console.error("更新エラー:", error);
         setMessage("更新に失敗しました");
       } else {
         setMessage("更新しました");
@@ -60,9 +62,18 @@ const VehicleRegisterPage: React.FC = () => {
         fetchVehicles();
       }
     } else {
-      const { error } = await supabase.from("vehicles").insert([{ ...vehicleData, last_km: 0 }]);
+      // 新規追加
+      const { error } = await supabase.from("vehicles").insert([
+        {
+          name,
+          oil_change_km: oilChangeKm,
+          element_changed: elementChanged,
+          last_km: 0,
+        },
+      ]);
+
       if (error) {
-        console.error("車両追加エラー:", error);
+        console.error("追加エラー:", error);
         setMessage("保存に失敗しました");
       } else {
         setMessage("保存しました");
@@ -70,13 +81,24 @@ const VehicleRegisterPage: React.FC = () => {
       }
     }
 
+    // 入力欄をリセット
     setName("");
-    setOilChangeKm("");
+    setOilChangeKm(0);
     setElementChanged(false);
   };
 
+  // 編集開始
+  const handleEdit = (vehicle: Vehicle) => {
+    setEditingId(vehicle.id);
+    setName(vehicle.name);
+    setOilChangeKm(vehicle.oil_change_km);
+    setElementChanged(vehicle.element_changed);
+  };
+
   // 削除処理
-  const handleDeleteVehicle = async (id: string) => {
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("削除しますか？")) return;
+
     const { error } = await supabase.from("vehicles").delete().eq("id", id);
     if (error) {
       console.error("削除エラー:", error);
@@ -85,14 +107,6 @@ const VehicleRegisterPage: React.FC = () => {
       setMessage("削除しました");
       fetchVehicles();
     }
-  };
-
-  // 編集処理
-  const handleEditVehicle = (vehicle: Vehicle) => {
-    setEditingId(vehicle.id);
-    setName(vehicle.name);
-    setOilChangeKm(String(vehicle.oil_change_km));
-    setElementChanged(vehicle.element_changed);
   };
 
   return (
@@ -108,42 +122,60 @@ const VehicleRegisterPage: React.FC = () => {
 
       <div style={{ marginBottom: "1rem" }}>
         <label>
-          オイル交換距離：
-          <input type="number" value={oilChangeKm} onChange={(e) => setOilChangeKm(e.target.value)} /> km
+          オイル交換時の距離：
+          <input
+            type="number"
+            value={oilChangeKm}
+            onChange={(e) => setOilChangeKm(Number(e.target.value))}
+          /> km
         </label>
       </div>
 
       <div style={{ marginBottom: "1rem" }}>
         <label>
-          前回エレメント交換：
-          <select value={elementChanged ? "した" : "してない"} onChange={(e) => setElementChanged(e.target.value === "した")}>
-            <option value="した">した</option>
-            <option value="してない">してない</option>
+          エレメント交換：
+          <select value={elementChanged ? "true" : "false"} onChange={(e) => setElementChanged(e.target.value === "true")}>
+            <option value="false">してない</option>
+            <option value="true">した</option>
           </select>
         </label>
       </div>
 
       <div style={{ marginBottom: "1rem" }}>
-        <button onClick={handleSaveVehicle}>{editingId ? "更新" : "保存"}</button>{" "}
+        <button onClick={handleSave}>{editingId ? "更新" : "保存"}</button>{" "}
         <button onClick={() => navigate("/")}>TOPへ戻る</button>
       </div>
 
       {message && <p>{message}</p>}
 
+      {/* 一覧表示 */}
       <h3>登録済み車輛一覧</h3>
       {vehicles.length === 0 ? (
-        <p>まだ車輛が登録されていません。</p>
+        <p>まだ登録がありません。</p>
       ) : (
-        <ul>
-          {vehicles.map((v) => (
-            <li key={v.id}>
-              {v.name}（オイル交換距離: {v.oil_change_km} km / エレメント交換:{" "}
-              {v.element_changed ? "した" : "してない"} / 最終距離: {v.last_km ?? 0} km）
-              <button onClick={() => handleEditVehicle(v)}>編集</button>{" "}
-              <button onClick={() => handleDeleteVehicle(v.id)}>削除</button>
-            </li>
-          ))}
-        </ul>
+        <table border={1} cellPadding={4} style={{ borderCollapse: "collapse", width: "100%" }}>
+          <thead>
+            <tr>
+              <th>車輛名</th>
+              <th>オイル交換距離</th>
+              <th>エレメント交換</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vehicles.map((v) => (
+              <tr key={v.id}>
+                <td>{v.name}</td>
+                <td>{v.oil_change_km} km</td>
+                <td>{v.element_changed ? "した" : "してない"}</td>
+                <td>
+                  <button onClick={() => handleEdit(v)}>編集</button>{" "}
+                  <button onClick={() => handleDelete(v.id)}>削除</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

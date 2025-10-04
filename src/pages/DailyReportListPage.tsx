@@ -1,44 +1,20 @@
-// src/pages/DailyReportListPage.tsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
 
-interface Report {
-  id: string;
-  report_date: string;
-  site_name: string;
-  location: string;
-  last_km: number;
-  run_km: number;
-  status: string;
-  issue_detail: string | null;
-  vehicles: { id: string; name: string };
-  drivers: { id: string; name: string };
-}
-
 const DailyReportListPage: React.FC = () => {
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState("");
   const navigate = useNavigate();
 
   const fetchReports = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("reports")
-      .select(
-        `
-        id, report_date, site_name, location, last_km, run_km, status, issue_detail,
-        vehicles ( id, name ),
-        drivers ( id, name )
-      `
-      )
+      .select(`id, report_date, site_name, location, last_km, run_km, status, issue_detail,
+        vehicles ( id, name ), drivers ( id, name )`)
       .order("report_date", { ascending: false });
-
-    if (error) {
-      console.error("日報取得エラー:", error);
-    } else {
-      setReports(data || []);
-    }
+    if (data) setReports(data);
     setLoading(false);
   };
 
@@ -46,16 +22,20 @@ const DailyReportListPage: React.FC = () => {
     fetchReports();
   }, []);
 
-  // 日付フィルタ適用
-  const filteredReports = reports.filter((r) => {
-    return filterDate ? r.report_date === filterDate : true;
-  });
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("削除しますか？")) return;
+    await supabase.from("reports").delete().eq("id", id);
+    fetchReports();
+  };
 
-  // 車両ごとにまとめる
-  const groupedReports = filteredReports.reduce((acc: any, report) => {
-    const vehicleName = report.vehicles?.name || "不明車両";
-    if (!acc[vehicleName]) acc[vehicleName] = [];
-    acc[vehicleName].push(report);
+  const filteredReports = reports.filter((r) =>
+    filterDate ? r.report_date === filterDate : true
+  );
+
+  const grouped = filteredReports.reduce((acc: any, r) => {
+    const v = r.vehicles?.name || "不明車両";
+    if (!acc[v]) acc[v] = [];
+    acc[v].push(r);
     return acc;
   }, {});
 
@@ -67,25 +47,20 @@ const DailyReportListPage: React.FC = () => {
         <Link to="/"><button>TOPへ戻る</button></Link>
       </div>
 
-      {/* フィルタ（日付で絞り込み） */}
       <div style={{ margin: "1rem 0" }}>
         <label>
-          日付で絞り込み：
-          <input
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-          />
+          日付フィルタ：
+          <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
         </label>{" "}
         <button onClick={() => setFilterDate("")}>クリア</button>
       </div>
 
       {loading ? (
         <p>読み込み中...</p>
-      ) : Object.keys(groupedReports).length === 0 ? (
+      ) : Object.keys(grouped).length === 0 ? (
         <p>まだ日報がありません。</p>
       ) : (
-        Object.entries(groupedReports).map(([vehicle, vehicleReports]) => (
+        Object.entries(grouped).map(([vehicle, list]) => (
           <div key={vehicle} style={{ marginTop: "1rem" }}>
             <h3>🚙 {vehicle}</h3>
             <table border={1} cellPadding={4} style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -103,7 +78,7 @@ const DailyReportListPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {vehicleReports.map((r: any) => (
+                {list.map((r: any) => (
                   <tr key={r.id}>
                     <td>{r.report_date}</td>
                     <td>{r.drivers?.name || "不明"}</td>
@@ -115,11 +90,7 @@ const DailyReportListPage: React.FC = () => {
                     <td style={{ color: "red" }}>{r.issue_detail || ""}</td>
                     <td>
                       <button onClick={() => navigate(`/report/edit/${r.id}`)}>編集</button>{" "}
-                      <button onClick={async () => {
-                        if (!window.confirm("削除しますか？")) return;
-                        await supabase.from("reports").delete().eq("id", r.id);
-                        fetchReports();
-                      }}>削除</button>
+                      <button onClick={() => handleDelete(r.id)}>削除</button>
                     </td>
                   </tr>
                 ))}
