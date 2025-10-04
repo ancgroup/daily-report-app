@@ -1,96 +1,111 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* src/style.css */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
+/* ============================= */
+/* 全体のベーススタイル          */
+/* ============================= */
 body {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  padding: 0;
+  background: #f9f9f9;
+  color: #333;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* コンテナ */
+div {
+  margin-bottom: 0.8rem;
 }
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* 見出し */
+h1, h2, h3 {
+  margin: 0.6rem 0;
+  color: #222;
+}
+
+/* ============================= */
+/* ボタン                         */
+/* ============================= */
+button {
+  margin: 0.2rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background-color: #1976d2;
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background-color: #125a9c;
+}
+
+/* ============================= */
+/* 入力欄                         */
+/* ============================= */
+input, select {
+  margin: 0.3rem;
+  padding: 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+input[type="number"] {
+  width: 6rem;
+}
+
+/* ============================= */
+/* テーブル                       */
+/* ============================= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vanilla:hover {
-  filter: drop-shadow(0 0 2em #3178c6aa);
+th {
+  background: #f0f0f0;
 }
 
-.card {
-  padding: 2em;
-}
+/* ============================= */
+/* スマホ対応 PC/モバイル切替     */
+/* ============================= */
+.pc-only { display: block; }
+.mobile-only { display: none; }
 
-.read-the-docs {
-  color: #888;
-}
+@media (max-width: 768px) {
+  .pc-only { display: none; }
+  .mobile-only { display: block; }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+  body {
+    font-size: 0.95rem;
+    padding: 0.5rem;
   }
-  a:hover {
-    color: #747bff;
-  }
+
   button {
-    background-color: #f9f9f9;
+    width: 100%;
+    margin: 0.3rem 0;
   }
+
+  input, select {
+    width: 100%;
+    margin: 0.3rem 0;
+  }
+}
+
+/* ============================= */
+/* 警告色                         */
+/* ============================= */
+.warning {
+  color: red;
+  font-weight: bold;
 }

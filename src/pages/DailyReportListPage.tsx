@@ -1,91 +1,132 @@
-import React, { useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import { ReportContext } from "../context/ReportContext";
-import { VehicleContext } from "../context/VehicleContext";
-import { DriverContext } from "../context/DriverContext";
+// src/pages/DailyReportListPage.tsx
+import React, { useEffect, useState } from "react";
+import { supabase } from "../supabaseClient";
+import { Link, useNavigate } from "react-router-dom";
+
+interface Report {
+  id: string;
+  report_date: string;
+  site_name: string;
+  location: string;
+  last_km: number;
+  run_km: number;
+  status: string;
+  issue_detail: string | null;
+  vehicles: { id: string; name: string };
+  drivers: { id: string; name: string };
+}
 
 const DailyReportListPage: React.FC = () => {
-  const { reports, deleteReport, setEditingReport } = useContext(ReportContext)!;
-  const { vehicles } = useContext(VehicleContext)!;
-  const { drivers } = useContext(DriverContext)!;
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterDate, setFilterDate] = useState("");
   const navigate = useNavigate();
 
-  const getVehicleName = (vehicleId: string) => {
-    const v = vehicles.find((v) => String(v.id) === String(vehicleId));
-    return v ? v.name : "不明車両";
-  };
+  const fetchReports = async () => {
+    const { data, error } = await supabase
+      .from("reports")
+      .select(
+        `
+        id, report_date, site_name, location, last_km, run_km, status, issue_detail,
+        vehicles ( id, name ),
+        drivers ( id, name )
+      `
+      )
+      .order("report_date", { ascending: false });
 
-  const getDriverName = (driverId: string) => {
-    const d = drivers.find((d) => String(d.id) === String(driverId));
-    return d ? d.name : "不明運転者";
-  };
-
-  // 🔹 車両ごとにレポートをグループ化
-  const groupedReports: { [vehicleId: string]: typeof reports } = {};
-  reports.forEach((r) => {
-    if (!groupedReports[r.vehicleId]) {
-      groupedReports[r.vehicleId] = [];
+    if (error) {
+      console.error("日報取得エラー:", error);
+    } else {
+      setReports(data || []);
     }
-    groupedReports[r.vehicleId].push(r);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  // 日付フィルタ適用
+  const filteredReports = reports.filter((r) => {
+    return filterDate ? r.report_date === filterDate : true;
   });
 
+  // 車両ごとにまとめる
+  const groupedReports = filteredReports.reduce((acc: any, report) => {
+    const vehicleName = report.vehicles?.name || "不明車両";
+    if (!acc[vehicleName]) acc[vehicleName] = [];
+    acc[vehicleName].push(report);
+    return acc;
+  }, {});
+
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>📋 日報一覧</h2>
-      <button onClick={() => navigate("/")}>TOPへ戻る</button>
+    <div style={{ padding: "1rem" }}>
+      <h2>📋 車輛日報一覧</h2>
+      <div>
+        <Link to="/report/new"><button>＋ 新しい日報</button></Link>{" "}
+        <Link to="/"><button>TOPへ戻る</button></Link>
+      </div>
 
-      {Object.keys(groupedReports).length === 0 ? (
-        <p>日報がまだ登録されていません。</p>
+      {/* フィルタ（日付で絞り込み） */}
+      <div style={{ margin: "1rem 0" }}>
+        <label>
+          日付で絞り込み：
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+          />
+        </label>{" "}
+        <button onClick={() => setFilterDate("")}>クリア</button>
+      </div>
+
+      {loading ? (
+        <p>読み込み中...</p>
+      ) : Object.keys(groupedReports).length === 0 ? (
+        <p>まだ日報がありません。</p>
       ) : (
-        Object.keys(groupedReports).map((vehicleId) => {
-          const vehicleReports = groupedReports[vehicleId].sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-          );
-
-          return (
-            <div key={vehicleId} style={{ marginTop: "2rem" }}>
-              <h3>🚙 {getVehicleName(vehicleId)}</h3>
-              <table border={1} cellPadding={5} style={{ marginTop: "0.5rem", width: "100%" }}>
-                <thead>
-                  <tr>
-                    <th>日付</th>
-                    <th>運転者</th>
-                    <th>現場名</th>
-                    <th>移動場所</th>
-                    <th>走行距離</th>
-                    <th>状態</th>
-                    <th>備考</th>
-                    <th>操作</th>
+        Object.entries(groupedReports).map(([vehicle, vehicleReports]) => (
+          <div key={vehicle} style={{ marginTop: "1rem" }}>
+            <h3>🚙 {vehicle}</h3>
+            <table border={1} cellPadding={4} style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th>日付</th>
+                  <th>運転者</th>
+                  <th>現場名</th>
+                  <th>移動場所</th>
+                  <th>最終距離</th>
+                  <th>当日距離</th>
+                  <th>状況</th>
+                  <th>不具合内容</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vehicleReports.map((r: any) => (
+                  <tr key={r.id}>
+                    <td>{r.report_date}</td>
+                    <td>{r.drivers?.name || "不明"}</td>
+                    <td>{r.site_name}</td>
+                    <td>{r.location}</td>
+                    <td>{r.last_km} km</td>
+                    <td>{r.run_km} km</td>
+                    <td style={{ color: r.status === "不具合" ? "red" : "black" }}>{r.status}</td>
+                    <td style={{ color: "red" }}>{r.issue_detail || ""}</td>
+                    <td>
+                      <button onClick={() => navigate(`/report/edit/${r.id}`)}>編集</button>{" "}
+                      <button onClick={async () => {
+                        if (!window.confirm("削除しますか？")) return;
+                        await supabase.from("reports").delete().eq("id", r.id);
+                        fetchReports();
+                      }}>削除</button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {vehicleReports.map((r) => (
-                    <tr key={r.id}>
-                      <td>{r.date}</td>
-                      <td>{getDriverName(r.driverId)}</td>
-                      <td>{r.site}</td>
-                      <td>{r.destination}</td>
-                      <td>{r.mileage} km</td>
-                      <td>{r.condition}</td>
-                      <td>{r.notes}</td>
-                      <td>
-                        <button
-                          onClick={() => {
-                            setEditingReport(r);
-                            navigate("/daily-report-form");
-                          }}
-                        >
-                          編集
-                        </button>{" "}
-                        <button onClick={() => deleteReport(r.id)}>削除</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          );
-        })
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
       )}
     </div>
   );

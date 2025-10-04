@@ -1,115 +1,138 @@
-import React, { useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import { VehicleContext } from "../context/VehicleContext";
-import { ReportContext } from "../context/ReportContext";
+// src/pages/TopPage.tsx
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+
+interface Vehicle {
+  id: string;
+  name: string;
+  oil_change_km: number;   // 直近オイル交換距離
+  oil_change_count: number; // オイル交換回数
+}
+
+interface Report {
+  id: string;
+  report_date: string;
+  last_km: number;
+  status: string;
+  issue_detail: string | null;
+  vehicle_id: string;
+}
 
 const TopPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { vehicles } = useContext(VehicleContext)!;
-  const { reports } = useContext(ReportContext)!;
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [latestReports, setLatestReports] = useState<Record<string, Report | null>>({});
+  const [message, setMessage] = useState("");
 
-  const getLastMileage = (vehicleId: string) => {
-    const vehicleReports = reports.filter(
-      (r) => String(r.vehicleId) === String(vehicleId)
-    );
-    if (vehicleReports.length === 0) return 0;
-    return Math.max(...vehicleReports.map((r) => r.mileage));
-  };
+  // 車両・日報取得
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: vData } = await supabase.from("vehicles").select("*");
+      if (vData) setVehicles(vData);
 
-  const getLatestReport = (vehicleId: string) => {
-    const vehicleReports = reports
-      .filter((r) => String(r.vehicleId) === String(vehicleId))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return vehicleReports.length > 0 ? vehicleReports[0] : null;
+      const latest: Record<string, Report | null> = {};
+      for (const v of vData || []) {
+        const { data: rData } = await supabase
+          .from("reports")
+          .select("*")
+          .eq("vehicle_id", v.id)
+          .order("report_date", { ascending: false })
+          .limit(1);
+
+        latest[v.id] = rData && rData.length > 0 ? rData[0] : null;
+      }
+      setLatestReports(latest);
+    };
+
+    fetchData();
+  }, []);
+
+  // オイル交換実施処理
+  const handleOilChange = async (vehicle: Vehicle) => {
+    const lastKm = latestReports[vehicle.id]?.last_km ?? 0;
+
+    const { error } = await supabase
+      .from("vehicles")
+      .update({
+        oil_change_km: lastKm,
+        oil_change_count: vehicle.oil_change_count + 1,
+      })
+      .eq("id", vehicle.id);
+
+    if (error) {
+      console.error("オイル交換更新エラー:", error);
+      setMessage("更新に失敗しました");
+    } else {
+      setMessage(`${vehicle.name} のオイル交換を登録しました`);
+      // 再読み込み
+      const { data: vData } = await supabase.from("vehicles").select("*");
+      if (vData) setVehicles(vData);
+    }
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>🚗 ANCカー日報</h1>
-      <p>日々の業務お疲れ様です。</p>
-
-      {/* 上段ボタン */}
-      <div style={{ marginBottom: "1rem" }}>
-        <button onClick={() => navigate("/daily-report-form")}>日報作成</button>{" "}
-        <button onClick={() => navigate("/daily-report-list")}>日報一覧</button>{" "}
-        <button
-          onClick={() => navigate("/data")}
-          style={{ backgroundColor: "skyblue", color: "black" }}
-        >
-          データ保存・読込
-        </button>
+    <div style={{ padding: "1rem" }}>
+      <h1>🚗 車輛日報</h1>
+      <div style={{ marginTop: "1rem" }}>
+        <Link to="/report/new"><button>日報作成</button></Link>{" "}
+        <Link to="/reports"><button>日報一覧</button></Link>{" "}
+        <Link to="/vehicles"><button>車輛登録</button></Link>{" "}
+        <Link to="/drivers"><button>運転者登録</button></Link>
       </div>
 
-      {/* 下段ボタン */}
-      <div style={{ marginBottom: "1rem" }}>
-        <button onClick={() => navigate("/vehicle-register")}>車輛登録</button>{" "}
-        <button onClick={() => navigate("/driver-register")}>運転者登録</button>
-      </div>
+      <h2 style={{ marginTop: "2rem" }}>📊 車両状況</h2>
+      {vehicles.map((v) => {
+        const report = latestReports[v.id];
+        const lastKm = report?.last_km ?? 0;
 
-      {/* 車両情報 */}
-      <h2>🚙 車両情報</h2>
-      {vehicles.length === 0 ? (
-        <p>登録されている車両がありません。</p>
-      ) : (
-        vehicles.map((vehicle) => {
-          const lastMileage = getLastMileage(vehicle.id);
-          const lastReport = getLatestReport(vehicle.id);
+        // 次回オイル交換距離 = 登録時の交換距離 + 5000
+        const nextOilChangeKm = (v.oil_change_km || 0) + 5000;
+        const remain = nextOilChangeKm - lastKm;
 
-          const lastOilOdo = Number(vehicle.oilChangeOdometer) || 0;
-          const nextOilKm = lastOilOdo + 5000;
-          const oilRemaining = nextOilKm - lastMileage;
+        // 2回に1回エレメント交換
+        const isElementChange = (v.oil_change_count + 1) % 2 === 1;
 
-          const needElement = vehicle.elementChanged ? "不要" : "要";
-
-          // 🔴 状態が不具合かどうか
-          const isBadCondition =
-            lastReport && lastReport.condition === "不具合";
-
-          // 🔴 オイル交換が近いかどうか
-          const isOilDue = oilRemaining <= 500;
-
-          return (
-            <div
-              key={vehicle.id}
-              style={{
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-                padding: "1rem",
-                marginBottom: "1rem",
-                backgroundColor: "#f9f9f9",
-              }}
+        return (
+          <div
+            key={v.id}
+            style={{
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+              padding: "1rem",
+              margin: "1rem 0",
+            }}
+          >
+            <h3>🚙 {v.name}</h3>
+            <p>最終距離: {lastKm} km</p>
+            <p>
+              オイル交換まで残り:{" "}
+              <span style={{ color: remain <= 500 ? "red" : "black" }}>
+                {remain} km
+              </span>
+            </p>
+            <p>
+              次回エレメント交換:{" "}
+              <span style={{ color: isElementChange ? "red" : "black" }}>
+                {isElementChange ? "要" : "不要"}
+              </span>
+            </p>
+            <p style={{ color: report?.status === "不具合" ? "red" : "black" }}>
+              状況: {report?.status || "不明"}
+            </p>
+            {report?.status === "不具合" && report.issue_detail && (
+              <p style={{ color: "red" }}>不具合内容: {report.issue_detail}</p>
+            )}
+            <button
+              style={{ marginTop: "0.5rem" }}
+              onClick={() => handleOilChange(v)}
             >
-              <h3>
-                {vehicle.name}{" "}
-                {isOilDue && (
-                  <span style={{ color: "red", marginLeft: "0.5rem" }}>
-                    （オイル交換時期）
-                  </span>
-                )}
-              </h3>
-              <p>最終走行距離：{lastMileage} km</p>
-              <p>
-                次回オイル交換：{nextOilKm} km（あと{" "}
-                {oilRemaining > 0 ? oilRemaining : 0} km）
-              </p>
-              <p>次回エレメント交換：{needElement}</p>
-              {lastReport && (
-                <>
-                  <p>最終使用日：{lastReport.date}</p>
-                  {isBadCondition ? (
-                    <p style={{ color: "red" }}>
-                      状態：不具合 <br />
-                      備考：{lastReport.notes || "（未記入）"}
-                    </p>
-                  ) : (
-                    <p>状態：{lastReport.condition}</p>
-                  )}
-                </>
-              )}
-            </div>
-          );
-        })
-      )}
+              オイル交換実施
+            </button>
+          </div>
+        );
+      })}
+
+      {message && <p>{message}</p>}
     </div>
   );
 };
