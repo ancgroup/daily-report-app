@@ -1,6 +1,6 @@
 // src/App.tsx
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import TopPage from "./pages/TopPage";
 import VehicleRegisterPage from "./pages/VehicleRegisterPage";
@@ -8,27 +8,69 @@ import DriverRegisterPage from "./pages/DriverRegisterPage";
 import ReportNewPage from "./pages/ReportNewPage";
 import ReportEditPage from "./pages/ReportEditPage";
 import DailyReportListPage from "./pages/DailyReportListPage";
+import LoginPage from "./pages/LoginPage";
+
+// 認証チェック用
+const PrivateRoute = ({ children }: { children: JSX.Element }) => {
+  const loggedIn = localStorage.getItem("loggedIn") === "true";
+  return loggedIn ? children : <Navigate to="/login" />;
+};
 
 const App: React.FC = () => {
   return (
     <Routes>
-      {/* TOPページ */}
-      <Route path="/" element={<TopPage />} />
+      {/* ログイン画面 */}
+      <Route path="/login" element={<LoginPage />} />
 
-      {/* 車輛登録 */}
-      <Route path="/vehicles" element={<VehicleRegisterPage />} />
-
-      {/* 運転者登録 */}
-      <Route path="/drivers" element={<DriverRegisterPage />} />
-
-      {/* 日報作成 */}
-      <Route path="/report/new" element={<ReportNewPage />} />
-
-      {/* 日報編集 */}
-      <Route path="/report/edit/:id" element={<ReportEditPage />} />
-
-      {/* 日報一覧 */}
-      <Route path="/reports" element={<DailyReportListPage />} />
+      {/* 以下はログイン必須 */}
+      <Route
+        path="/"
+        element={
+          <PrivateRoute>
+            <TopPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/vehicles"
+        element={
+          <PrivateRoute>
+            <VehicleRegisterPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/drivers"
+        element={
+          <PrivateRoute>
+            <DriverRegisterPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/report/new"
+        element={
+          <PrivateRoute>
+            <ReportNewPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/report/edit/:id"
+        element={
+          <PrivateRoute>
+            <ReportEditPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <PrivateRoute>
+            <DailyReportListPage />
+          </PrivateRoute>
+        }
+      />
     </Routes>
   );
 };

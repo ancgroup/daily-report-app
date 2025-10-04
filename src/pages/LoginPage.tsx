@@ -1,33 +1,40 @@
-import React, { useState } from "react";
+// src/pages/LoginPage.tsx
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    // すでにログイン済みなら自動でTOPへ
+    const loggedIn = localStorage.getItem("loggedIn");
+    if (loggedIn === "true") {
+      navigate("/");
+    }
+  }, [navigate]);
+
+  const handleLogin = () => {
     if (password === "ancar") {
-      localStorage.setItem("authenticated", "true"); // ✅ ログイン状態を保存
-      navigate("/"); // TOPページへ移動
+      localStorage.setItem("loggedIn", "true");
+      navigate("/");
     } else {
-      alert("パスワードが違います");
+      setError("パスワードが違います");
     }
   };
 
   return (
-    <div style={{ padding: "2rem", textAlign: "center" }}>
+    <div style={{ padding: "2rem" }}>
       <h2>🔑 ログイン</h2>
-      <form onSubmit={handleLogin}>
-        <input
-          type="password"
-          placeholder="パスワードを入力"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ padding: "0.5rem", marginRight: "1rem" }}
-        />
-        <button type="submit">ログイン</button>
-      </form>
+      <input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="パスワードを入力"
+      />
+      <button onClick={handleLogin}>ログイン</button>
+      {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
 };
