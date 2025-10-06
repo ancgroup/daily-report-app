@@ -1,6 +1,6 @@
 // src/pages/TopPage.tsx
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 interface Vehicle {
@@ -11,46 +11,18 @@ interface Vehicle {
   element_count: number;
 }
 
-interface Report {
-  id: string;
-  report_date: string;
-  last_km: number;
-  status: string;
-  issue_detail: string | null;
-}
-
 const TopPage: React.FC = () => {
-  const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [latestReports, setLatestReports] = useState<Record<string, Report | null>>({});
 
-  // 車両情報と直近日報取得
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: vData } = await supabase.from("vehicles").select("*");
-      if (vData) setVehicles(vData);
-
-      const reportsByVehicle: Record<string, Report | null> = {};
-      for (const v of vData || []) {
-        const { data: rData } = await supabase
-          .from("reports")
-          .select("*")
-          .eq("vehicle_id", v.id)
-          .order("report_date", { ascending: false })
-          .limit(1);
-
-        reportsByVehicle[v.id] = rData && rData.length > 0 ? rData[0] : null;
+    const fetchVehicles = async () => {
+      const { data, error } = await supabase.from("vehicles").select("*");
+      if (!error && data) {
+        setVehicles(data);
       }
-      setLatestReports(reportsByVehicle);
     };
-    fetchData();
+    fetchVehicles();
   }, []);
-
-  // ログアウト処理
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    navigate("/");
-  };
 
   return (
     <div style={{ padding: "1rem" }}>
@@ -59,51 +31,38 @@ const TopPage: React.FC = () => {
         <Link to="/report/new"><button>日報作成</button></Link>{" "}
         <Link to="/reports"><button>日報一覧</button></Link>{" "}
         <Link to="/vehicles"><button>車輛登録</button></Link>{" "}
-        <Link to="/drivers"><button>運転者登録</button></Link>{" "}
-        <button onClick={handleLogout} style={{ marginLeft: "1rem", color: "red" }}>
-          ログアウト
-        </button>
+        <Link to="/drivers"><button>運転者登録</button></Link>
       </div>
 
-      <h2 style={{ marginTop: "2rem" }}>🚙 車輛情報</h2>
-      {vehicles.map((v) => {
-        const report = latestReports[v.id];
-        const nextOilKm = v.oil_change_km + 5000;
-        const remain = nextOilKm - (v.last_km || 0);
-        const elementNeeded = v.element_count % 2 === 0 ? "不要" : "要";
-
-        return (
-          <div
-            key={v.id}
-            style={{
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              margin: "0.5rem 0",
-              padding: "0.5rem",
-            }}
-          >
-            <h3>{v.name}</h3>
-            <p>
-              オイル交換まで残り:{" "}
-              <span style={{ color: remain <= 500 ? "red" : "black" }}>
-                {remain} km
-              </span>
-            </p>
-            <p>次回エレメント交換: {elementNeeded}</p>
-            {report && (
-              <>
-                <p>最終距離: {report.last_km} km</p>
-                <p style={{ color: report.status === "不具合" ? "red" : "black" }}>
-                  状況: {report.status}
-                </p>
-                {report.status === "不具合" && report.issue_detail && (
-                  <p style={{ color: "red" }}>不具合内容: {report.issue_detail}</p>
-                )}
-              </>
-            )}
-          </div>
-        );
-      })}
+      {/* 車両情報カード */}
+      <div style={{ marginTop: "2rem" }}>
+        {vehicles.map((v) => {
+          const nextOilKm = (v.oil_change_km || 0) + 5000;
+          const remain = nextOilKm - (v.last_km || 0);
+          const needElement = v.element_count % 2 === 1 ? "要" : "不要";
+          return (
+            <div
+              key={v.id}
+              style={{
+                border: "1px solid #ccc",
+                borderRadius: "8px",
+                padding: "1rem",
+                marginBottom: "1rem",
+              }}
+            >
+              <h3>🚙 {v.name}</h3>
+              <p>
+                オイル交換まで残り{" "}
+                <span style={{ color: remain <= 500 ? "red" : "black" }}>
+                  {remain} km
+                </span>
+              </p>
+              <p>最終距離: {v.last_km} km</p>
+              <p>次回エレメント交換: {needElement}</p>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
