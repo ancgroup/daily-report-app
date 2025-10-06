@@ -1,6 +1,6 @@
 // src/pages/TopPage.tsx
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 interface Vehicle {
@@ -13,6 +13,7 @@ interface Vehicle {
 
 const TopPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchVehicles = async () => {
@@ -24,9 +25,23 @@ const TopPage: React.FC = () => {
     fetchVehicles();
   }, []);
 
+  // ログアウト処理
+  const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn"); // ログインフラグ削除
+    navigate("/login"); // ログインページに戻す
+  };
+
   return (
     <div style={{ padding: "1rem" }}>
-      <h1>🚗 車輛日報</h1>
+      {/* ヘッダー部分 */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1>🚗 車輛日報</h1>
+        <button onClick={handleLogout} style={{ padding: "0.5rem 1rem" }}>
+          ログアウト
+        </button>
+      </div>
+
+      {/* メニュー */}
       <div style={{ marginTop: "1rem" }}>
         <Link to="/report/new"><button>日報作成</button></Link>{" "}
         <Link to="/reports"><button>日報一覧</button></Link>{" "}
