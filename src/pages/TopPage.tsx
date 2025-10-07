@@ -42,7 +42,10 @@ const TopPage: React.FC = () => {
         <Link to="/reports"><button>日報一覧</button></Link>{" "}
         <Link to="/vehicles"><button>車輛登録</button></Link>{" "}
         <Link to="/drivers"><button>運転者登録</button></Link>{" "}
-        <button onClick={handleLogout} style={{ backgroundColor: "#f55", color: "white" }}>
+        <button
+          onClick={handleLogout}
+          style={{ backgroundColor: "#f55", color: "white" }}
+        >
           ログアウト
         </button>
       </div>
@@ -56,6 +59,11 @@ const TopPage: React.FC = () => {
           const remain = nextOilKm - (v.last_km || 0);
           const needElement = v.element_count % 2 === 1 ? "要" : "不要";
 
+          const oilMessage =
+            remain <= 100
+              ? `⚠ オイル交換時期です（残り ${remain} km）`
+              : `オイル交換まで残り ${remain} km`;
+
           return (
             <div
               key={v.id}
@@ -67,14 +75,14 @@ const TopPage: React.FC = () => {
               }}
             >
               <h3>🚙 {v.name}</h3>
-              {remain <= 100 ? (
-                <p style={{ color: "red", fontWeight: "bold" }}>⚠ オイル交換時期です</p>
-              ) : (
-                <p>
-                  オイル交換まで残り{" "}
-                  <span style={{ color: remain <= 500 ? "red" : "black" }}>{remain} km</span>
-                </p>
-              )}
+              <p
+                style={{
+                  color: remain <= 100 ? "red" : remain <= 500 ? "orange" : "black",
+                  fontWeight: remain <= 100 ? "bold" : "normal",
+                }}
+              >
+                {oilMessage}
+              </p>
               <p>最終距離: {v.last_km} km</p>
               <p>次回エレメント交換: {needElement}</p>
             </div>
