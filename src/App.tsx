@@ -12,7 +12,7 @@ import LoginPage from "./pages/LoginPage";
 const isAuthenticated = () => localStorage.getItem("isLoggedIn") === "true";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  return isAuthenticated() ? children : <Navigate to="/login" />;
+  return isAuthenticated() ? children : <Navigate to="/login" replace />;
 };
 
 const App: React.FC = () => {
@@ -68,6 +68,9 @@ const App: React.FC = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* 未定義ルートはログインへ */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 };

@@ -1,11 +1,18 @@
 // src/pages/LoginPage.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // ログイン済みならTOPにリダイレクト
+    if (localStorage.getItem("isLoggedIn") === "true") {
+      navigate("/");
+    }
+  }, [navigate]);
 
   const handleLogin = () => {
     if (password === "ancar") {
@@ -17,7 +24,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div style={{ textAlign: "center", paddingTop: "5rem" }}>
+    <div style={{ textAlign: "center", paddingTop: "6rem" }}>
       <h2>🔐 ログイン</h2>
       <input
         type="password"
