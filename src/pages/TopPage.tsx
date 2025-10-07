@@ -10,6 +10,7 @@ interface Vehicle {
   last_km: number;
   oil_change_km: number;
   element_count: number;
+  last_run_date?: string; // ← 最終走行日
 }
 
 const TopPage: React.FC = () => {
@@ -19,8 +20,32 @@ const TopPage: React.FC = () => {
 
   useEffect(() => {
     const fetchVehicles = async () => {
-      const { data, error } = await supabase.from("vehicles").select("*");
-      if (!error && data) setVehicles(data);
+      // vehicles と reports を両方参照し、最新日報の日付を取得
+      const { data: vehicleData, error } = await supabase.from("vehicles").select("*");
+      if (error || !vehicleData) return;
+
+      const vehicleIds = vehicleData.map((v) => v.id);
+
+      const { data: reportData } = await supabase
+        .from("reports")
+        .select("vehicle_id, report_date")
+        .in("vehicle_id", vehicleIds)
+        .order("report_date", { ascending: false });
+
+      // 各車両の最新日報日を取得
+      const latestDates: Record<string, string> = {};
+      reportData?.forEach((r) => {
+        if (!latestDates[r.vehicle_id]) {
+          latestDates[r.vehicle_id] = r.report_date;
+        }
+      });
+
+      const merged = vehicleData.map((v) => ({
+        ...v,
+        last_run_date: latestDates[v.id] || "未記録",
+      }));
+
+      setVehicles(merged);
     };
     fetchVehicles();
   }, []);
@@ -84,6 +109,7 @@ const TopPage: React.FC = () => {
                 {oilMessage}
               </p>
               <p>最終距離: {v.last_km} km</p>
+              <p>📅 最終走行日: {v.last_run_date}</p>
               <p>次回エレメント交換: {needElement}</p>
             </div>
           );
