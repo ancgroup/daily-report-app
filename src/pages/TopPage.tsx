@@ -67,10 +67,14 @@ const TopPage: React.FC = () => {
               }}
             >
               <h3>🚙 {v.name}</h3>
-              <p>
-                オイル交換まで残り{" "}
-                <span style={{ color: remain <= 500 ? "red" : "black" }}>{remain} km</span>
-              </p>
+              {remain <= 100 ? (
+                <p style={{ color: "red", fontWeight: "bold" }}>⚠ オイル交換時期です</p>
+              ) : (
+                <p>
+                  オイル交換まで残り{" "}
+                  <span style={{ color: remain <= 500 ? "red" : "black" }}>{remain} km</span>
+                </p>
+              )}
               <p>最終距離: {v.last_km} km</p>
               <p>次回エレメント交換: {needElement}</p>
             </div>

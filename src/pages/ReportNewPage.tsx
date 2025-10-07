@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
+import Footer from "../components/Footer";
 
 interface Vehicle {
   id: string;
@@ -29,10 +30,7 @@ const ReportNewPage: React.FC = () => {
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [sites, setSites] = useState<string[]>([]);
-  const [destinations, setDestinations] = useState<string[]>([]);
 
-  // 車両・運転者・過去データ取得
   useEffect(() => {
     const fetchData = async () => {
       const { data: vData } = await supabase.from("vehicles").select("*");
@@ -40,51 +38,24 @@ const ReportNewPage: React.FC = () => {
 
       const { data: dData } = await supabase.from("drivers").select("*");
       if (dData) setDrivers(dData);
-
-      const { data: rData } = await supabase.from("reports").select("site_name, location");
-      if (rData) {
-        setSites([...new Set(rData.map((r) => r.site_name).filter(Boolean))]);
-        setDestinations([...new Set(rData.map((r) => r.location).filter(Boolean))]);
-      }
     };
     fetchData();
   }, []);
 
-  // 選択車両の最終距離を取得
-  useEffect(() => {
-    const fetchLastKm = async () => {
-      if (!vehicleId) return;
-      const { data } = await supabase
-        .from("reports")
-        .select("last_km")
-        .eq("vehicle_id", vehicleId)
-        .order("report_date", { ascending: false })
-        .limit(1);
-      if (data && data.length > 0) {
-        setPreviousKm(data[0].last_km || 0);
-        setLastKm(data[0].last_km || 0);
-      } else {
-        setPreviousKm(0);
-        setLastKm(0);
-      }
-    };
-    fetchLastKm();
-  }, [vehicleId]);
-
-  // 日付ボタン操作
   const handleDateChange = (days: number) => {
     const newDate = new Date(date);
     newDate.setDate(newDate.getDate() + days);
     setDate(newDate.toISOString().split("T")[0]);
   };
 
-  // 保存処理
   const handleSave = async () => {
     if (!vehicleId || !driverId) {
       setMessage("車両と運転者を選択してください");
       return;
     }
+
     const runKm = lastKm - previousKm;
+
     const { error } = await supabase.from("reports").insert([
       {
         report_date: date,
@@ -100,7 +71,6 @@ const ReportNewPage: React.FC = () => {
     ]);
 
     if (error) {
-      console.error("日報保存エラー:", error);
       setMessage("保存に失敗しました");
     } else {
       await supabase.from("vehicles").update({ last_km: lastKm }).eq("id", vehicleId);
@@ -109,7 +79,7 @@ const ReportNewPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: "1rem" }}>
+    <div style={{ padding: "1rem", position: "relative", minHeight: "100vh" }}>
       <h2>📝 車輛日報作成</h2>
 
       <div>
@@ -148,20 +118,14 @@ const ReportNewPage: React.FC = () => {
       <div>
         <label>
           現場名：
-          <input list="site-list" value={site} onChange={(e) => setSite(e.target.value)} />
-          <datalist id="site-list">
-            {sites.map((s, i) => <option key={i} value={s} />)}
-          </datalist>
+          <input value={site} onChange={(e) => setSite(e.target.value)} />
         </label>
       </div>
 
       <div>
         <label>
           移動場所：
-          <input list="dest-list" value={destination} onChange={(e) => setDestination(e.target.value)} />
-          <datalist id="dest-list">
-            {destinations.map((d, i) => <option key={i} value={d} />)}
-          </datalist>
+          <input value={destination} onChange={(e) => setDestination(e.target.value)} />
         </label>
       </div>
 
@@ -201,6 +165,7 @@ const ReportNewPage: React.FC = () => {
       </div>
 
       {message && <p>{message}</p>}
+      <Footer />
     </div>
   );
 };
