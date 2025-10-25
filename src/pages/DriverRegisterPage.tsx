@@ -99,14 +99,14 @@ const DriverRegisterPage: React.FC = () => {
           placeholder="新しい運転者名"
           value={newDriver}
           onChange={(e) => {
-            playSound("/sounds/futu.mp3"); // ✅ 通常音
+            playSound("/sounds/futu.mp3");
             setNewDriver(e.target.value);
           }}
         />
         <button onClick={handleAdd}>追加</button>{" "}
         <button
           onClick={() => {
-            playSound("/sounds/pyororin.mp3"); // ✅ TOP音
+            playSound("/sounds/pyororin.mp3");
             navigate("/");
           }}
         >
@@ -134,7 +134,7 @@ const DriverRegisterPage: React.FC = () => {
                     type="text"
                     value={editName}
                     onChange={(e) => {
-                      playSound("/sounds/futu.mp3"); // ✅ 通常音
+                      playSound("/sounds/futu.mp3");
                       setEditName(e.target.value);
                     }}
                   />
@@ -148,7 +148,7 @@ const DriverRegisterPage: React.FC = () => {
                     <button onClick={handleUpdate}>保存</button>{" "}
                     <button
                       onClick={() => {
-                        playSound("/sounds/futu.mp3"); // ✅ 通常音
+                        playSound("/sounds/futu.mp3");
                         setEditingId(null);
                       }}
                     >
@@ -158,7 +158,19 @@ const DriverRegisterPage: React.FC = () => {
                 ) : (
                   <>
                     <button onClick={() => handleEdit(driver)}>編集</button>{" "}
-                    <button onClick={() => handleDelete(driver.id)}>削除</button>
+                    <button
+                      onClick={() => handleDelete(driver.id)}
+                      style={{
+                        backgroundColor: "#ff5555",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "2px 8px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      削除
+                    </button>
                   </>
                 )}
               </td>

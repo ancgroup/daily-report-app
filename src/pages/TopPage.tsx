@@ -56,7 +56,7 @@ const TopPage: React.FC = () => {
 
   // ✅ ログアウト時の音再生
   const handleLogout = () => {
-    playSound("/sounds/chanchan.mp3"); // ログアウト音
+    playSound("/sounds/doorclose.mp3"); // ログアウト音
     localStorage.removeItem("isLoggedIn");
     setMessage("ログアウトしました");
     setTimeout(() => {
