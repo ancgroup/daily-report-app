@@ -1,8 +1,14 @@
-// src/pages/ReportEditPage.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Footer from "../components/Footer";
+
+// ✅ 共通サウンド再生関数
+const playSound = (file: string) => {
+  const audio = new Audio(file);
+  audio.volume = 0.9; // 大きめで明瞭
+  audio.play().catch((e) => console.warn("音声再生エラー:", e));
+};
 
 const ReportEditPage: React.FC = () => {
   const { id } = useParams();
@@ -26,16 +32,21 @@ const ReportEditPage: React.FC = () => {
   }, [id]);
 
   const handleSave = async () => {
+    playSound("/sounds/piroriro.mp3"); // ✅ 更新ボタン音
+
     if (!report) return;
-    const { error } = await supabase.from("reports").update({
-      report_date: report.report_date,
-      driver_id: report.driver_id,
-      site_name: report.site_name,
-      location: report.location,
-      last_km: report.last_km,
-      status,
-      issue_detail: status === "不具合" ? report.issue_detail : null,
-    }).eq("id", id);
+    const { error } = await supabase
+      .from("reports")
+      .update({
+        report_date: report.report_date,
+        driver_id: report.driver_id,
+        site_name: report.site_name,
+        location: report.location,
+        last_km: report.last_km,
+        status,
+        issue_detail: status === "不具合" ? report.issue_detail : null,
+      })
+      .eq("id", id);
 
     if (!error) {
       navigate("/reports");
@@ -50,40 +61,73 @@ const ReportEditPage: React.FC = () => {
         <h2>✏️ 日報編集</h2>
 
         <div>
-          <label>日付：
-            <input type="date" value={report.report_date} onChange={(e) => setReport({ ...report, report_date: e.target.value })} />
+          <label>
+            日付：
+            <input
+              type="date"
+              value={report.report_date}
+              onChange={(e) => setReport({ ...report, report_date: e.target.value })}
+            />
           </label>
         </div>
 
         <div>
-          <label>運転者：
-            <select value={report.driver_id} onChange={(e) => setReport({ ...report, driver_id: e.target.value })}>
-              {drivers.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          <label>
+            運転者：
+            <select
+              value={report.driver_id}
+              onChange={(e) => setReport({ ...report, driver_id: e.target.value })}
+            >
+              {drivers.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
             </select>
           </label>
         </div>
 
         <div>
-          <label>現場名：
-            <input value={report.site_name} onChange={(e) => setReport({ ...report, site_name: e.target.value })} />
+          <label>
+            現場名：
+            <input
+              value={report.site_name}
+              onChange={(e) => setReport({ ...report, site_name: e.target.value })}
+            />
           </label>
         </div>
 
         <div>
-          <label>移動場所：
-            <input value={report.location} onChange={(e) => setReport({ ...report, location: e.target.value })} />
+          <label>
+            移動場所：
+            <input
+              value={report.location}
+              onChange={(e) => setReport({ ...report, location: e.target.value })}
+            />
           </label>
         </div>
 
         <div>
-          <label>最終走行距離：
-            <input type="number" value={report.last_km} onChange={(e) => setReport({ ...report, last_km: Number(e.target.value) })} /> km
+          <label>
+            最終走行距離：
+            <input
+              type="number"
+              value={report.last_km}
+              onChange={(e) =>
+                setReport({ ...report, last_km: Number(e.target.value) })
+              }
+            />{" "}
+            km
           </label>
         </div>
 
         <div>
-          <label>状況：
-            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <label>
+            状況：
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
               <option value="良好">良好</option>
               <option value="不具合">不具合</option>
             </select>
@@ -92,15 +136,28 @@ const ReportEditPage: React.FC = () => {
 
         {status === "不具合" && (
           <div>
-            <label>不具合内容：
-              <input value={report.issue_detail || ""} onChange={(e) => setReport({ ...report, issue_detail: e.target.value })} />
+            <label>
+              不具合内容：
+              <input
+                value={report.issue_detail || ""}
+                onChange={(e) =>
+                  setReport({ ...report, issue_detail: e.target.value })
+                }
+              />
             </label>
           </div>
         )}
 
         <div style={{ marginTop: "1rem" }}>
           <button onClick={handleSave}>更新</button>{" "}
-          <button onClick={() => navigate("/reports")}>戻る</button>
+          <button
+            onClick={() => {
+              playSound("/sounds/futu.mp3"); // ✅ 戻るボタン音
+              navigate("/reports");
+            }}
+          >
+            戻る
+          </button>
         </div>
       </div>
       <Footer />

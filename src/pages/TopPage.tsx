@@ -1,16 +1,22 @@
-// src/pages/TopPage.tsx
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Footer from "../components/Footer";
+
+// ✅ 共通サウンド再生関数
+const playSound = (file: string) => {
+  const audio = new Audio(file);
+  audio.volume = 0.9;
+  audio.play().catch((e) => console.warn("音声再生エラー:", e));
+};
 
 interface Vehicle {
   id: string;
   name: string;
   last_km: number;
   oil_change_km: number;
-  element_count: number;
-  last_run_date?: string; // ← 最終走行日
+  element_changed: boolean; // ← 修正（typo修正）
+  last_run_date?: string; // 最終走行日
 }
 
 const TopPage: React.FC = () => {
@@ -20,7 +26,6 @@ const TopPage: React.FC = () => {
 
   useEffect(() => {
     const fetchVehicles = async () => {
-      // vehicles と reports を両方参照し、最新日報の日付を取得
       const { data: vehicleData, error } = await supabase.from("vehicles").select("*");
       if (error || !vehicleData) return;
 
@@ -32,7 +37,6 @@ const TopPage: React.FC = () => {
         .in("vehicle_id", vehicleIds)
         .order("report_date", { ascending: false });
 
-      // 各車両の最新日報日を取得
       const latestDates: Record<string, string> = {};
       reportData?.forEach((r) => {
         if (!latestDates[r.vehicle_id]) {
@@ -50,7 +54,9 @@ const TopPage: React.FC = () => {
     fetchVehicles();
   }, []);
 
+  // ✅ ログアウト時の音再生
   const handleLogout = () => {
+    playSound("/sounds/chanchan.mp3"); // ログアウト音
     localStorage.removeItem("isLoggedIn");
     setMessage("ログアウトしました");
     setTimeout(() => {
@@ -63,10 +69,30 @@ const TopPage: React.FC = () => {
       <h1>🚗 車輛日報</h1>
 
       <div style={{ marginTop: "1rem" }}>
-        <Link to="/report/new"><button>日報作成</button></Link>{" "}
-        <Link to="/reports"><button>日報一覧</button></Link>{" "}
-        <Link to="/vehicles"><button>車輛登録</button></Link>{" "}
-        <Link to="/drivers"><button>運転者登録</button></Link>{" "}
+        <Link
+          to="/report/new"
+          onClick={() => playSound("/sounds/futu.mp3")}
+        >
+          <button>日報作成</button>
+        </Link>{" "}
+        <Link
+          to="/reports"
+          onClick={() => playSound("/sounds/futu.mp3")}
+        >
+          <button>日報一覧</button>
+        </Link>{" "}
+        <Link
+          to="/vehicles"
+          onClick={() => playSound("/sounds/futu.mp3")}
+        >
+          <button>車輛登録</button>
+        </Link>{" "}
+        <Link
+          to="/drivers"
+          onClick={() => playSound("/sounds/futu.mp3")}
+        >
+          <button>運転者登録</button>
+        </Link>{" "}
         <button
           onClick={handleLogout}
           style={{ backgroundColor: "#f55", color: "white" }}
@@ -82,7 +108,7 @@ const TopPage: React.FC = () => {
         {vehicles.map((v) => {
           const nextOilKm = (v.oil_change_km || 0) + 5000;
           const remain = nextOilKm - (v.last_km || 0);
-          const needElement = v.element_chenged ? "不要" : "要";
+          const needElement = v.element_changed ? "不要" : "要";
 
           const oilMessage =
             remain <= 100

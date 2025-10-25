@@ -3,6 +3,13 @@ import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 
+// ✅ 共通サウンド再生関数
+const playSound = (file: string) => {
+  const audio = new Audio(file);
+  audio.volume = 0.9; // 大きめ＆はっきり
+  audio.play().catch((e) => console.warn("音声再生エラー:", e));
+};
+
 interface Vehicle {
   id: string;
   name: string;
@@ -35,6 +42,8 @@ const VehicleRegisterPage: React.FC = () => {
 
   // --- 保存 or 更新 ---
   const handleSave = async () => {
+    playSound("/sounds/piroriro.mp3"); // ✅ 保存音
+
     if (!name || !oilChangeKm) {
       alert("車輛名とオイル交換距離を入力してください。");
       return;
@@ -43,7 +52,7 @@ const VehicleRegisterPage: React.FC = () => {
     const newData = {
       name,
       oil_change_km: Number(oilChangeKm),
-      element_changed: elementChanged, // ← ここが今回の入力で上書き
+      element_changed: elementChanged,
     };
 
     let result;
@@ -52,7 +61,7 @@ const VehicleRegisterPage: React.FC = () => {
         .from("vehicles")
         .update(newData)
         .eq("id", editingId)
-        .select(); // ← 更新後のデータを取得
+        .select();
     } else {
       result = await supabase.from("vehicles").insert([newData]).select();
     }
@@ -63,7 +72,6 @@ const VehicleRegisterPage: React.FC = () => {
       return;
     }
 
-    // 更新結果を即反映
     fetchVehicles();
     setName("");
     setOilChangeKm("");
@@ -72,8 +80,9 @@ const VehicleRegisterPage: React.FC = () => {
     setMessage("保存しました");
   };
 
-  // --- 編集時のデータ読み込み ---
+  // --- 編集 ---
   const handleEdit = (v: Vehicle) => {
+    playSound("/sounds/futu.mp3");
     setEditingId(v.id);
     setName(v.name);
     setOilChangeKm(v.oil_change_km.toString());
@@ -83,6 +92,7 @@ const VehicleRegisterPage: React.FC = () => {
   // --- 削除 ---
   const handleDelete = async (id: string) => {
     if (!window.confirm("削除しますか？")) return;
+    playSound("/sounds/futu.mp3");
     const { error } = await supabase.from("vehicles").delete().eq("id", id);
     if (error) {
       console.error("削除エラー:", error.message);
@@ -100,7 +110,10 @@ const VehicleRegisterPage: React.FC = () => {
           車輛名：
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              playSound("/sounds/futu.mp3");
+              setName(e.target.value);
+            }}
             style={{ marginLeft: "0.5rem" }}
           />
         </label>
@@ -112,7 +125,10 @@ const VehicleRegisterPage: React.FC = () => {
           <input
             type="number"
             value={oilChangeKm}
-            onChange={(e) => setOilChangeKm(e.target.value)}
+            onChange={(e) => {
+              playSound("/sounds/futu.mp3");
+              setOilChangeKm(e.target.value);
+            }}
             style={{ marginLeft: "0.5rem" }}
           />
         </label>
@@ -123,7 +139,10 @@ const VehicleRegisterPage: React.FC = () => {
           今回エレメント交換：
           <select
             value={elementChanged ? "した" : "してない"}
-            onChange={(e) => setElementChanged(e.target.value === "した")}
+            onChange={(e) => {
+              playSound("/sounds/futu.mp3");
+              setElementChanged(e.target.value === "した");
+            }}
             style={{ marginLeft: "0.5rem" }}
           >
             <option value="した">した</option>
@@ -134,15 +153,22 @@ const VehicleRegisterPage: React.FC = () => {
 
       <div style={{ marginTop: "1rem" }}>
         <button onClick={handleSave}>{editingId ? "更新" : "保存"}</button>{" "}
-        <button onClick={() => navigate("/")}>TOPへ戻る</button>
+        <button
+          onClick={() => {
+            playSound("/sounds/pyororin.mp3");
+            navigate("/");
+          }}
+        >
+          TOPへ戻る
+        </button>
       </div>
 
       {message && <p style={{ color: "green" }}>{message}</p>}
 
       <h3>登録済み車輛</h3>
-      <ul>
+      <ul style={{ listStyle: "none", paddingLeft: 0 }}>
         {vehicles.map((v) => (
-          <li key={v.id}>
+          <li key={v.id} style={{ marginBottom: "0.5rem" }}>
             {v.name}（オイル交換距離: {v.oil_change_km} km / 今回エレメント交換:{" "}
             {v.element_changed ? "した" : "してない"} / 次回エレメント交換:{" "}
             {v.element_changed ? "不要" : "要"}）
@@ -154,7 +180,15 @@ const VehicleRegisterPage: React.FC = () => {
             </button>
             <button
               onClick={() => handleDelete(v.id)}
-              style={{ marginLeft: "0.5rem" }}
+              style={{
+                marginLeft: "0.5rem",
+                backgroundColor: "#ff5555",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                padding: "2px 8px",
+                cursor: "pointer",
+              }}
             >
               削除
             </button>

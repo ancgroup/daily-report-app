@@ -1,8 +1,14 @@
-// src/pages/ReportNewPage.tsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
+
+// ✅ 共通サウンド再生関数
+const playSound = (file: string) => {
+  const audio = new Audio(file);
+  audio.volume = 0.9; // 大きめ＆はっきり
+  audio.play().catch((e) => console.warn("音声再生エラー:", e));
+};
 
 interface Vehicle {
   id: string;
@@ -42,13 +48,18 @@ const ReportNewPage: React.FC = () => {
     fetchData();
   }, []);
 
+  // 日付変更（クリック音あり）
   const handleDateChange = (days: number) => {
+    playSound("/sounds/futu.mp3");
     const newDate = new Date(date);
     newDate.setDate(newDate.getDate() + days);
     setDate(newDate.toISOString().split("T")[0]);
   };
 
+  // 保存処理
   const handleSave = async () => {
+    playSound("/sounds/piroriro.mp3");
+
     if (!vehicleId || !driverId) {
       setMessage("車両と運転者を選択してください");
       return;
@@ -86,7 +97,14 @@ const ReportNewPage: React.FC = () => {
         <label>
           日付：
           <button onClick={() => handleDateChange(-1)}>←</button>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => {
+              playSound("/sounds/futu.mp3");
+              setDate(e.target.value);
+            }}
+          />
           <button onClick={() => handleDateChange(1)}>→</button>
         </label>
       </div>
@@ -94,10 +112,18 @@ const ReportNewPage: React.FC = () => {
       <div>
         <label>
           車両：
-          <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
+          <select
+            value={vehicleId}
+            onChange={(e) => {
+              playSound("/sounds/futu.mp3");
+              setVehicleId(e.target.value);
+            }}
+          >
             <option value="">選択してください</option>
             {vehicles.map((v) => (
-              <option key={v.id} value={v.id}>{v.name}</option>
+              <option key={v.id} value={v.id}>
+                {v.name}
+              </option>
             ))}
           </select>
         </label>
@@ -106,10 +132,18 @@ const ReportNewPage: React.FC = () => {
       <div>
         <label>
           運転者：
-          <select value={driverId} onChange={(e) => setDriverId(e.target.value)}>
+          <select
+            value={driverId}
+            onChange={(e) => {
+              playSound("/sounds/futu.mp3");
+              setDriverId(e.target.value);
+            }}
+          >
             <option value="">選択してください</option>
             {drivers.map((d) => (
-              <option key={d.id} value={d.id}>{d.name}</option>
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
             ))}
           </select>
         </label>
@@ -118,21 +152,41 @@ const ReportNewPage: React.FC = () => {
       <div>
         <label>
           現場名：
-          <input value={site} onChange={(e) => setSite(e.target.value)} />
+          <input
+            value={site}
+            onChange={(e) => {
+              playSound("/sounds/futu.mp3");
+              setSite(e.target.value);
+            }}
+          />
         </label>
       </div>
 
       <div>
         <label>
           移動場所：
-          <input value={destination} onChange={(e) => setDestination(e.target.value)} />
+          <input
+            value={destination}
+            onChange={(e) => {
+              playSound("/sounds/futu.mp3");
+              setDestination(e.target.value);
+            }}
+          />
         </label>
       </div>
 
       <div>
         <label>
           最終走行距離：
-          <input type="number" value={lastKm} onChange={(e) => setLastKm(Number(e.target.value))} /> km
+          <input
+            type="number"
+            value={lastKm}
+            onChange={(e) => {
+              playSound("/sounds/futu.mp3");
+              setLastKm(Number(e.target.value));
+            }}
+          />{" "}
+          km
         </label>
       </div>
 
@@ -143,7 +197,13 @@ const ReportNewPage: React.FC = () => {
       <div>
         <label>
           状況：
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select
+            value={status}
+            onChange={(e) => {
+              playSound("/sounds/futu.mp3");
+              setStatus(e.target.value);
+            }}
+          >
             <option value="良好">良好</option>
             <option value="不具合">不具合</option>
           </select>
@@ -154,14 +214,28 @@ const ReportNewPage: React.FC = () => {
         <div>
           <label>
             不具合内容：
-            <input type="text" value={issueDetail} onChange={(e) => setIssueDetail(e.target.value)} />
+            <input
+              type="text"
+              value={issueDetail}
+              onChange={(e) => {
+                playSound("/sounds/futu.mp3");
+                setIssueDetail(e.target.value);
+              }}
+            />
           </label>
         </div>
       )}
 
       <div style={{ marginTop: "1rem" }}>
         <button onClick={handleSave}>保存</button>{" "}
-        <button onClick={() => navigate("/")}>TOPへ戻る</button>
+        <button
+          onClick={() => {
+            playSound("/sounds/pyororin.mp3");
+            navigate("/");
+          }}
+        >
+          TOPへ戻る
+        </button>
       </div>
 
       {message && <p>{message}</p>}
