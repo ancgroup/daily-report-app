@@ -82,7 +82,7 @@ const TopPage: React.FC = () => {
         {vehicles.map((v) => {
           const nextOilKm = (v.oil_change_km || 0) + 5000;
           const remain = nextOilKm - (v.last_km || 0);
-          const needElement = v.element_count % 2 === 1 ? "要" : "不要";
+          const needElement = v.element_chenged ? "不要" : "要";
 
           const oilMessage =
             remain <= 100
