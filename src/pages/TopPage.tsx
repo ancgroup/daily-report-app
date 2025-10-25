@@ -15,8 +15,8 @@ interface Vehicle {
   name: string;
   last_km: number;
   oil_change_km: number;
-  element_changed: boolean; // ← 修正（typo修正）
-  last_run_date?: string; // 最終走行日
+  element_changed: boolean;
+  last_run_date?: string;
 }
 
 const TopPage: React.FC = () => {
@@ -30,7 +30,6 @@ const TopPage: React.FC = () => {
       if (error || !vehicleData) return;
 
       const vehicleIds = vehicleData.map((v) => v.id);
-
       const { data: reportData } = await supabase
         .from("reports")
         .select("vehicle_id, report_date")
@@ -54,9 +53,8 @@ const TopPage: React.FC = () => {
     fetchVehicles();
   }, []);
 
-  // ✅ ログアウト時の音再生
   const handleLogout = () => {
-    playSound("/sounds/doorclose.mp3"); // ログアウト音
+    playSound("/sounds/chanchan.mp3");
     localStorage.removeItem("isLoggedIn");
     setMessage("ログアウトしました");
     setTimeout(() => {
@@ -69,41 +67,41 @@ const TopPage: React.FC = () => {
       <h1>🚗 車輛日報</h1>
 
       <div style={{ marginTop: "1rem" }}>
-        <Link
-          to="/report/new"
-          onClick={() => playSound("/sounds/futu.mp3")}
-        >
+        <Link to="/report/new" onClick={() => playSound("/sounds/futu.mp3")}>
           <button>日報作成</button>
         </Link>{" "}
-        <Link
-          to="/reports"
-          onClick={() => playSound("/sounds/futu.mp3")}
-        >
+        <Link to="/reports" onClick={() => playSound("/sounds/futu.mp3")}>
           <button>日報一覧</button>
         </Link>{" "}
-        <Link
-          to="/vehicles"
-          onClick={() => playSound("/sounds/futu.mp3")}
-        >
+        {/* 👇 ここを追加 */}
+        <p style={{ margin: "0.5rem 0 0.3rem", color: "#333" }}>
+          👇オイル交換時はここで編集
+        </p>
+        <Link to="/vehicles" onClick={() => playSound("/sounds/futu.mp3")}>
           <button>車輛登録</button>
         </Link>{" "}
-        <Link
-          to="/drivers"
-          onClick={() => playSound("/sounds/futu.mp3")}
-        >
+        <Link to="/drivers" onClick={() => playSound("/sounds/futu.mp3")}>
           <button>運転者登録</button>
         </Link>{" "}
         <button
           onClick={handleLogout}
-          style={{ backgroundColor: "#f55", color: "white" }}
+          style={{
+            backgroundColor: "#f55",
+            color: "white",
+            marginTop: "0.5rem",
+          }}
         >
           ログアウト
         </button>
+        {/* 👇 ここを追加 */}
+        <p style={{ color: "red", fontWeight: "bold", marginTop: "0.3rem" }}>
+          終了時は必ずログアウト
+        </p>
       </div>
 
       {message && <p style={{ color: "green" }}>{message}</p>}
 
-      {/* 車両情報カード */}
+      {/* 車両情報 */}
       <div style={{ marginTop: "2rem", paddingBottom: "5rem" }}>
         {vehicles.map((v) => {
           const nextOilKm = (v.oil_change_km || 0) + 5000;
