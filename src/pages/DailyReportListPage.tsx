@@ -20,7 +20,7 @@ interface Report {
   issue_detail: string | null;
   vehicles?: { id: string; name: string };
   drivers?: { id: string; name: string };
-  computed_run_km?: number;
+  computed_run_km?: number | null;
 }
 
 const DailyReportListPage: React.FC = () => {
@@ -31,7 +31,7 @@ const DailyReportListPage: React.FC = () => {
   const [filterEnd, setFilterEnd] = useState("");
   const navigate = useNavigate();
 
-  // ✅ 日報データ取得
+  // ✅ 日報データ取得＋走行距離算出
   const fetchReports = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -41,7 +41,7 @@ const DailyReportListPage: React.FC = () => {
         vehicles ( id, name ),
         drivers ( id, name )
       `)
-      .order("report_date", { ascending: false });
+      .order("report_date", { ascending: true }); // 昇順にして前回距離を計算しやすく
 
     if (error) {
       console.error("日報取得エラー:", error);
@@ -50,7 +50,32 @@ const DailyReportListPage: React.FC = () => {
       return;
     }
 
-    setReports(data || []);
+    const rawReports = data || [];
+
+    // ✅ 車両ごとに前回距離から走行距離算出
+    const computedReports: Report[] = [];
+    const lastKmByVehicle: Record<string, number | null> = {};
+
+    for (const r of rawReports) {
+      const vId = r.vehicles?.id || "unknown";
+      const prevKm = lastKmByVehicle[vId];
+      let runKm: number | null = null;
+      if (prevKm !== undefined && prevKm !== null && r.last_km !== null) {
+        runKm = r.last_km - prevKm;
+      }
+      computedReports.push({
+        ...r,
+        computed_run_km: runKm && runKm >= 0 ? runKm : null,
+      });
+      lastKmByVehicle[vId] = r.last_km;
+    }
+
+    // ✅ 表示は降順
+    computedReports.sort(
+      (a, b) => new Date(b.report_date).getTime() - new Date(a.report_date).getTime()
+    );
+
+    setReports(computedReports);
     setLoading(false);
   };
 
@@ -66,7 +91,7 @@ const DailyReportListPage: React.FC = () => {
     await fetchReports();
   };
 
-  // ✅ 日付フィルター適用
+  // ✅ 日付フィルター
   const filteredReports = reports.filter((r) => {
     if (!filterStart && !filterEnd) return true;
     const d = new Date(r.report_date);
@@ -125,10 +150,7 @@ const DailyReportListPage: React.FC = () => {
 
         {/* 操作ボタン */}
         <div>
-          <Link
-            to="/report/new"
-            onClick={() => playSound("/sounds/piroriro.mp3")}
-          >
+          <Link to="/report/new" onClick={() => playSound("/sounds/piroriro.mp3")}>
             <button>＋ 新しい日報</button>
           </Link>{" "}
           <Link to="/" onClick={() => playSound("/sounds/pyororin.mp3")}>
@@ -153,8 +175,7 @@ const DailyReportListPage: React.FC = () => {
                   borderRadius: "6px",
                 }}
               >
-                🚙 {vehicleName}{" "}
-                {expanded[vehicleName] ? "▼" : "▶"}（{list.length} 件）
+                🚙 {vehicleName} {expanded[vehicleName] ? "▼" : "▶"}（{list.length} 件）
               </h3>
 
               {expanded[vehicleName] && (
@@ -196,9 +217,9 @@ const DailyReportListPage: React.FC = () => {
                         <td>{r.location}</td>
                         <td>{r.last_km ?? "-"} km</td>
                         <td>
-                          {typeof r.computed_run_km === "number"
+                          {r.computed_run_km !== null
                             ? `${r.computed_run_km} km`
-                            : "-"}
+                            : "—"}
                         </td>
                         <td
                           style={{
