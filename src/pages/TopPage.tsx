@@ -64,7 +64,7 @@ const TopPage: React.FC = () => {
 
   return (
     <div style={{ padding: "1rem", position: "relative", minHeight: "100vh" }}>
-      <h1>🚗 車輛日報</h1>
+      <h1>🚐ドラレポ</h1>
 
       <div style={{ marginTop: "1rem" }}>
         <Link to="/report/new" onClick={() => playSound("/sounds/futu.mp3")}>
