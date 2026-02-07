@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom"; // useNavigate は使わなくなったため削除
 import { supabase } from "../supabaseClient";
 import Footer from "../components/Footer";
 
@@ -20,9 +20,8 @@ interface Vehicle {
 }
 
 const TopPage: React.FC = () => {
-  const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [message, setMessage] = useState("");
+  // message ステートはログアウト表示用だったので、不要であれば削除可能です
 
   useEffect(() => {
     const fetchVehicles = async () => {
@@ -53,14 +52,7 @@ const TopPage: React.FC = () => {
     fetchVehicles();
   }, []);
 
-  const handleLogout = () => {
-    playSound("/sounds/doorclose.mp3");
-    localStorage.removeItem("isLoggedIn");
-    setMessage("ログアウトしました");
-    setTimeout(() => {
-      navigate("/login");
-    }, 1200);
-  };
+  // 📝 ログアウトボタン用の handleLogout 関数を削除しました
 
   return (
     <div style={{ padding: "1rem", position: "relative", minHeight: "100vh" }}>
@@ -73,7 +65,6 @@ const TopPage: React.FC = () => {
         <Link to="/reports" onClick={() => playSound("/sounds/futu.mp3")}>
           <button>日報一覧</button>
         </Link>{" "}
-        {/* 👇 ここを追加 */}
         <p style={{ margin: "0.5rem 0 0.3rem", color: "#333" }}>
           👇オイル交換時はここで編集
         </p>
@@ -83,23 +74,14 @@ const TopPage: React.FC = () => {
         <Link to="/drivers" onClick={() => playSound("/sounds/futu.mp3")}>
           <button>運転者登録</button>
         </Link>{" "}
-        <button
-          onClick={handleLogout}
-          style={{
-            backgroundColor: "#f55",
-            color: "white",
-            marginTop: "0.5rem",
-          }}
-        >
-          ログアウト
-        </button>
-        {/* 👇 ここを追加 */}
-        <p style={{ color: "red", fontWeight: "bold", marginTop: "0.3rem" }}>
-          終了時は必ずログアウト
+        
+        {/* 📝 ログアウトボタンを削除しました */}
+
+        {/* 📝 テキストを「ログイン・アウトを省きました」に変更しました */}
+        <p style={{ color: "#666", fontWeight: "bold", marginTop: "0.3rem" }}>
+          ログイン・アウトを省きました
         </p>
       </div>
-
-      {message && <p style={{ color: "green" }}>{message}</p>}
 
       {/* 車両情報 */}
       <div style={{ marginTop: "2rem", paddingBottom: "5rem" }}>
